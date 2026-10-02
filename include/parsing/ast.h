@@ -51,11 +51,16 @@ typedef enum {
     X(AST_PROGRAM, program, \
         AST_FIELD_DYNARRAY(program_items) /* AstNode* */ \
     ) \
-    /* <Import> ::= IMPORT <Path> [ AS <Ident> | DOT ( STAR | L_BRACE <ImportItem> { COMMA <ImportItem> } [ COMMA ] R_BRACE ) ] SEMICOLON */ \
     X(AST_IMPORT, import_decl, \
         AST_FIELD_NODE(path) \
         AST_FIELD_INTERN(alias) \
-        AST_FIELD_DYNARRAY(items) /* InternResult* */ \
+        AST_FIELD_BOOL(is_glob) \
+        AST_FIELD_DYNARRAY(items) /* AstNode* (AST_IMPORT_ITEM) */ \
+    ) \
+    /* <ImportItem> ::= <Ident> [ AS <Ident> ] */ \
+    X(AST_IMPORT_ITEM, import_item, \
+        AST_FIELD_INTERN(name) \
+        AST_FIELD_INTERN(alias) \
     ) \
     /* <ImportC> ::= IMPORT_C <String> SEMICOLON */ \
     X(AST_IMPORT_C, import_c_decl, \
@@ -81,7 +86,6 @@ typedef enum {
     /* <FnSig> ::= FN <Ident> [ <Generics> ] LPAREN [ <Params> ] RPAREN [ ARROW <Type> ] [ <Where> ] */ \
     X(AST_FN_DECL, fn_decl, \
         AST_FIELD_INTERN(name) \
-        AST_FIELD_BOOL(is_pub) \
         AST_FIELD_BOOL(is_comptime) \
         AST_FIELD_DYNARRAY(generic_params) \
         AST_FIELD_DYNARRAY(params) \
@@ -331,6 +335,7 @@ AST_NODES(AST_GENERATE_STRUCT)
 #define AST_GENERATE_UNION(enum_val, name, fields) Ast_##name name;
 struct AstNode {
     AstNodeType node_type;
+    bool is_pub;            // set by parse_item / parse_impl_item
     Span span;
     Type *type;
     union {

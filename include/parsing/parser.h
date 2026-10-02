@@ -38,6 +38,7 @@ void print_parse_error(Parser *p);
 
 /* ----------------------- Tokens ----------------------- */
 Token *current_token(Parser *p);
+Token *previous_token(Parser *p);
 Token *peek(Parser *p, size_t offset);
 Token *parser_advance(Parser *p);
 bool   parser_match(Parser *p, TokenKind expected);
