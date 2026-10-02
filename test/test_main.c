@@ -5,6 +5,7 @@ int g_tests_passed = 0;
 
 extern void suite_datastructures(void);
 extern void suite_lexer(void);
+extern void test_ast(void);
 
 int main(void) {
     printf("========================================\n");
@@ -13,6 +14,7 @@ int main(void) {
 
     suite_datastructures();
     suite_lexer();
+    test_ast();
 
     printf("========================================\n");
     printf("\033[32m SUCCESS\033[0m: %d/%d tests passed.\n", g_tests_passed, g_tests_run);
