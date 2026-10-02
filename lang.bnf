@@ -67,8 +67,8 @@
 <Return>        ::= RETURN [ <Expr> ] SEMICOLON
 <Break>         ::= BREAK [ <Label> ] [ <Expr> ] SEMICOLON
 <Continue>      ::= CONTINUE [ <Label> ] SEMICOLON
-<Label>         ::= AT <Ident>
-<LabelDef>      ::= <Label> COLON
+<Label>         ::= COLON <Ident>
+<LabelDef>      ::= <Ident> COLON
 <Assert>        ::= ASSERT <Expr> SEMICOLON
 <Unsafe>        ::= UNSAFE <Block>
 
@@ -89,7 +89,7 @@
 <Cast>          ::= <Unary> { AS <Type> }
 <Unary>         ::= ( MINUS | BANG | AMP [ MUT ] | STAR | COMPTIME ) <Unary> | <Postfix>
 <Postfix>       ::= <Primary> { LPAREN [ <Args> ] RPAREN | L_SQB <Expr> R_SQB | DOT ( <Ident> | <Int> ) [ <GenericArgs> ] | DOT_L_SQB <Expr> R_SQB
-                   | QUESTION | BANG | DOT UNCHECKED L_SQB <Expr> R_SQB }
+                   | QUESTION | BANG }
 <Args>          ::= <Arg> { COMMA <Arg> } [ COMMA ]
 <Arg>           ::= [ <Ident> COLON ] <Expr>
 
@@ -112,7 +112,8 @@
                    | <Path> LPAREN [ <Pattern> { COMMA <Pattern> } ] RPAREN
                    | LPAREN <Pattern> { COMMA <Pattern> } RPAREN
 <FieldPat>      ::= <Ident> [ COLON <Pattern> ]
-<Literal>       ::= <Int> | <Float> | <String> | <Rune> | <Byte> | TRUE | FALSE | NULL
+<Literal>       ::= <Int> | <Float> | <String> | <CString> | <Rune> | <Byte> | TRUE | FALSE | NULL
+<CString>       ::= 'c"' { <AnyChar> | <Escape> } '"'
 <Rune>          ::= "'" ( <AnyChar> | <Escape> ) "'"
 <Byte>          ::= B_QUOTE ( <Ascii> | <Escape> ) "'" ; # Escape includes \u{hex} 
 
