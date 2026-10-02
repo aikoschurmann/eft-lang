@@ -111,7 +111,7 @@ AstNode *new_node(Parser *p, AstNodeType kind) {
 }
 
 /* Allocates a node and sets its span from start_tok to the last consumed token */
-AstNode *new_node_spanned(Parser *p, AstNodeType kind, Token *start_tok) {
+static AstNode *new_node_spanned(Parser *p, AstNodeType kind, Token *start_tok) {
     AstNode *node = new_node(p, kind);
     set_span(node, start_tok, previous_token(p));
     return node;
@@ -178,26 +178,43 @@ static InternResult *ident_record(Parser *p, Token *tok) {
     return tok->record;
 }
 
+/* Keywords are valid as path segments (e.g. import test.test.*) */
+static bool is_ident_like(Token *t) {
+    if (!t) return false;
+    if (t->type == TK_IDENT) return true;
+    // Any keyword token can appear as a module/path segment
+#define X(name, str) if (t->type == name) return true;
+    EFT_KEYWORDS(X)
+#undef X
+    return false;
+}
+
+static Token *expect_ident_like(Parser *p, const char *error_msg) {
+    Token *t = current_token(p);
+    if (!is_ident_like(t)) parser_throw(p, error_msg, t);
+    return parser_advance(p);
+}
+
 // <Path> ::= <Ident> { DOT <Ident> }
 static AstNode *parse_path(Parser *p) {
-    Token *start_tok = expect(p, TK_IDENT, "Expected an identifier in path");
+    Token *start_tok = expect_ident_like(p, "Expected an identifier in path");
 
-    AstNode *node = new_node(p, AST_PATH);
     DynArray *segs = new_dynarray(p, sizeof(InternResult *), 4);
-    node->data.path.segments = segs;
     dynarray_push_ptr(segs, ident_record(p, start_tok));
 
     // Only consume '.' if an identifier follows. Otherwise it belongs to
     // the import suffix: `import std.io.*;` or `import std.io.{a, b};`
     while (current_token(p) && current_token(p)->type == TK_DOT) {
         Token *next = peek(p, 1);
-        if (!next || next->type != TK_IDENT) break;
+        if (!next || !is_ident_like(next)) break;
         parser_advance(p);                       // '.'
-        Token *id = parser_advance(p);           // ident
+        Token *id = parser_advance(p);           // ident or keyword
         dynarray_push_ptr(segs, ident_record(p, id));
     }
 
-    set_span(node, start_tok, previous_token(p));
+    AstNode *node = new_node_spanned(p, AST_PATH, start_tok);
+    node->data.path.segments = segs;
+    
     return node;
 }
 
@@ -205,49 +222,60 @@ static AstNode *parse_path(Parser *p) {
 static AstNode *parse_import_item(Parser *p) {
     Token *name_tok = expect(p, TK_IDENT, "Expected an identifier in import list");
 
-    AstNode *node = new_node(p, AST_IMPORT);
-    node->data.import_item.name = ident_record(p, name_tok);
-
+    InternResult *alias = NULL;
     if (parser_match(p, TK_AS)) {
         Token *alias_tok = expect(p, TK_IDENT, "Expected an identifier after 'as'");
-        node->data.import_item.alias = ident_record(p, alias_tok);
+        alias = ident_record(p, alias_tok);
     }
 
-    set_span(node, name_tok, previous_token(p));
+    AstNode *node = new_node_spanned(p, AST_IMPORT_ITEM, name_tok);
+    node->data.import_item.name = ident_record(p, name_tok);
+    node->data.import_item.alias = alias;
+
     return node;
+}
+
+/* Helper for parsing: { A, B as C } */
+static DynArray *parse_import_list(Parser *p) {
+    expect(p, TK_LBRACE, "Expected '*' or '{' after '.' in import");
+    
+    DynArray *items = new_dynarray(p, sizeof(AstNode *), 4);
+    do {
+        dynarray_push_ptr(items, parse_import_item(p));
+    } while (parser_match(p, TK_COMMA) && current_token(p) && current_token(p)->type != TK_RBRACE);
+    
+    expect(p, TK_RBRACE, "Expected '}' to close import list");
+    return items;
 }
 
 // <Import> ::= IMPORT <Path> [ AS <Ident> | DOT ( STAR | L_BRACE <ImportItem> { COMMA <ImportItem> } [ COMMA ] R_BRACE ) ] SEMICOLON
 static AstNode *parse_import(Parser *p) {
     Token *start_tok = expect(p, TK_IMPORT, "Expected 'import' keyword");
+    AstNode *path = parse_path(p);
 
-    AstNode *node = new_node(p, AST_IMPORT);
-    node->data.import_decl.path = parse_path(p);
+    InternResult *alias = NULL;
+    DynArray *items = NULL;
+    bool is_glob = false;
 
     if (parser_match(p, TK_AS)) {
-        Token *alias_tok = expect(p, TK_IDENT, "Expected an identifier after 'as'");
-        node->data.import_decl.alias = ident_record(p, alias_tok);
-    } else if (parser_match(p, TK_DOT)) {
+        alias = ident_record(p, expect(p, TK_IDENT, "Expected identifier after 'as'"));
+    } 
+    else if (parser_match(p, TK_DOT)) {
         if (parser_match(p, TK_STAR)) {
-            node->data.import_decl.is_glob = true;
+            is_glob = true;
         } else {
-            expect(p, TK_LBRACE, "Expected '*' or '{' after '.' in import");
-
-            DynArray *items = new_dynarray(p, sizeof(AstNode *), 4);
-            node->data.import_decl.items = items;
-
-            do {
-                dynarray_push_ptr(items, parse_import_item(p));
-                // allow a trailing comma before '}'
-            } while (parser_match(p, TK_COMMA) &&
-                     current_token(p) && current_token(p)->type != TK_RBRACE);
-
-            expect(p, TK_RBRACE, "Expected '}' to close import list");
+            items = parse_import_list(p); // expect(LBRACE) handles the error checking inside here
         }
     }
 
     expect(p, TK_SEMICOLON, "Expected ';' after import");
-    set_span(node, start_tok, previous_token(p));
+
+    AstNode *node = new_node_spanned(p, AST_IMPORT, start_tok);
+    node->data.import_decl.path = path;
+    node->data.import_decl.alias = alias;
+    node->data.import_decl.is_glob = is_glob;
+    node->data.import_decl.items = items;
+
     return node;
 }
 
