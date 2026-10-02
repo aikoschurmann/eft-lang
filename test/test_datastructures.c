@@ -37,6 +37,7 @@ static unsigned g_fail_every = 0;
 static unsigned g_calls = 0;
 
 
+#if defined(__APPLE__) || defined(__linux__)
 #include <dlfcn.h>
 void *malloc(size_t size) {
     if (g_fail_every && (++g_calls % g_fail_every) == 0) return NULL;
@@ -54,6 +55,12 @@ void *realloc(void *ptr, size_t size) {
     if (!real_realloc) real_realloc = dlsym(RTLD_NEXT, "realloc");
     return real_realloc(ptr, size);
 }
+#else
+// On Windows/MSVC/MinGW, overriding malloc dynamically is extremely non-trivial without 
+// specialized detouring libraries.
+#define malloc_is_stubbed 1
+#endif
+
 
 /* ---------- Slice hash / cmp (key is a Slice*) ---------- */
 /* slice_hash removed, using utils.h */
