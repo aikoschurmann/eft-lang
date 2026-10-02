@@ -3,6 +3,8 @@
 #include "file.h"
 #include "arena.h"
 #include "lexer.h"
+#include "parser.h"
+#include "ast_print.h"
 
 int main(int argc, char const *argv[])
 {
@@ -14,33 +16,43 @@ int main(int argc, char const *argv[])
     const char *filename = argv[1];
     char *source = read_file(filename);
     if (!source) {
-        printf("Failed to read file: %s\n", filename);
+        fprintf(stderr, "Failed to read file: %s\n", filename);
         return 1;
     }
 
-    Arena *arena = arena_create(1024 * 1024); // 1MB arena
+    Arena *arena = arena_create(4 * 1024 * 1024); // 4MB arena
     Lexer *lexer = lexer_create(source, strlen(source), arena);
     if (!lexer) {
-        printf("Failed to create lexer\n");
+        fprintf(stderr, "Failed to create lexer\n");
         return 1;
     }
 
-    printf("Lexing file: %s\n", filename);
     if (!lexer_lex_all(lexer)) {
-        printf("Lexing failed with an error.\n");
+        fprintf(stderr, "Lexing failed.\n");
+        arena_destroy(arena);
+        free_file_content(source);
+        return 1;
     }
 
-    size_t count = 0;
-    Token *tokens = lexer_get_tokens(lexer, &count);
-    
-    printf("Generated %zu tokens:\n", count);
-    for (size_t i = 0; i < count; i++) {
-        print_token(&tokens[i]);
+    Parser *parser = parser_create(lexer->tokens, (char *)filename, arena);
+    if (!parser) {
+        fprintf(stderr, "Failed to create parser\n");
+        arena_destroy(arena);
+        free_file_content(source);
+        return 1;
     }
 
-    lexer_destroy(lexer);
+    AstNode *program = parse_program(parser);
+    if (!program) {
+        // parse_program already printed the error via print_parse_error
+        arena_destroy(arena);
+        free_file_content(source);
+        return 1;
+    }
+
+    ast_print(program, 0);
+
     arena_destroy(arena);
     free_file_content(source);
-
     return 0;
 }

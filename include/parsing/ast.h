@@ -11,7 +11,6 @@
 
 /* ----------------------- Forward Declarations ----------------------- */ \
 typedef struct AstNode AstNode;
-typedef struct Type Type; 
 typedef struct Symbol Symbol;
 
 /* ----------------------- Operators ----------------------- */ \
@@ -229,7 +228,7 @@ typedef enum {
     ) \
     /* <Path> ::= <Ident> { DOT <Ident> } */ \
     X(AST_PATH, path, \
-        AST_FIELD_DYNARRAY(segments) \
+        AST_FIELD_INTERN_DYNARRAY(segments) \
     ) \
     /* <StructLit> ::= <Path> [ <GenericArgs> ] L_BRACE [ <Ident> COLON <Expr> { COMMA <Ident> COLON <Expr> } [ COMMA ] ] R_BRACE */ \
     X(AST_STRUCT_LITERAL, struct_literal, \
@@ -319,6 +318,7 @@ typedef enum {
 #define AST_FIELD_NODE(name) AstNode *name;
 #define AST_FIELD_INTERN(name) InternResult *name;
 #define AST_FIELD_DYNARRAY(name) DynArray *name;
+#define AST_FIELD_INTERN_DYNARRAY(name) DynArray *name;
 #define AST_FIELD_BOOL(name) bool name;
 #define AST_FIELD_OP(name) OpKind name;
 #define AST_FIELD_SLICE(name) Slice name;
@@ -337,11 +337,9 @@ struct AstNode {
     AstNodeType node_type;
     bool is_pub;            // set by parse_item / parse_impl_item
     Span span;
-    Type *type;
     union {
         AST_NODES(AST_GENERATE_UNION)
     } data;
 };
 
 AstNode *ast_create_node(AstNodeType type, Arena *arena);
-void ast_print(AstNode *node, int indent);

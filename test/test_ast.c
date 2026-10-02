@@ -1,8 +1,9 @@
 #include "framework.h"
 #include "ast.h"
+#include "ast_print.h"
 #include "parser.h"
 
-static void test_ast_printer(void) {
+void test_ast_printer(void) {
     Arena *arena = arena_create(1024 * 1024);
     
     AstNode *root = ast_create_node(AST_PROGRAM, arena);
@@ -15,7 +16,8 @@ static void test_ast_printer(void) {
     
     AstNode *ident = ast_create_node(AST_IDENTIFIER, arena);
     // Fake the intern result for demo
-    InternResult dummy_intern = { .key = "my_variable" };
+    Slice slice_my_variable = { .ptr = "my_variable", .len = 11 };
+    InternResult dummy_intern = { .key = &slice_my_variable };
     ident->data.identifier.name = &dummy_intern;
     ident->span = (Span){1, 5, 1, 10};
     var_decl->data.let_stmt.pattern = ident;
@@ -45,7 +47,8 @@ static void test_ast_complex(void) {
     
     // Callee
     AstNode *callee = ast_create_node(AST_IDENTIFIER, arena);
-    InternResult dummy_execute = { .key = "execute" };
+    Slice slice_execute = { .ptr = "execute", .len = 7 };
+    InternResult dummy_execute = { .key = &slice_execute };
     callee->data.identifier.name = &dummy_execute;
     call->data.call_expr.callee = callee;
     
@@ -64,7 +67,8 @@ static void test_ast_complex(void) {
     lambda->data.lambda_expr.params = l_params;
     
     AstNode *param_x = ast_create_node(AST_PARAM, arena);
-    InternResult dummy_x = { .key = "x" };
+    Slice slice_x = { .ptr = "x", .len = 1 };
+    InternResult dummy_x = { .key = &slice_x };
     param_x->data.param.name = &dummy_x;
     dynarray_push_ptr(l_params, param_x);
     
@@ -90,6 +94,7 @@ static void test_ast_complex(void) {
     printf("-------------------------------\n");
 }
 
+void test_ast(void);
 void test_ast(void) {
     RUN_TEST(test_ast_complex);
     }
