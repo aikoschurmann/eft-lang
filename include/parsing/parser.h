@@ -49,8 +49,37 @@ Token *expect(Parser *p, TokenKind expected, const char *error_msg);
 /* ----------------------- Allocators ----------------------- */
 /* Creates a node. Throws if OOM. */
 AstNode *new_node(Parser *p, AstNodeType kind);
+AstNode *new_node_spanned(Parser *p, AstNodeType kind, Token *start_tok);
 DynArray *new_dynarray(Parser *p, size_t elem_size, int initial_capacity);
 
 /* ----------------------- Entry Point ----------------------- */
 AstNode *parse_program(Parser *p);
 
+
+static inline void set_span(AstNode *node, Token *start, Token *end) {
+    if (!node || !start || !end) return;
+    node->span.start_line = start->span.start_line;
+    node->span.start_col  = start->span.start_col;
+    node->span.end_line   = end->span.end_line;
+    node->span.end_col    = end->span.end_col;
+}
+
+static inline void set_node_span(AstNode *node, AstNode *start_node, Token *end_tok) {
+    if (!node || !start_node || !end_tok) return;
+    node->span.start_line = start_node->span.start_line;
+    node->span.start_col  = start_node->span.start_col;
+    node->span.end_line   = end_tok->span.end_line;
+    node->span.end_col    = end_tok->span.end_col;
+}
+
+/* Sets only the start of a node's span */
+static inline void set_span_start(AstNode *node, Token *start) {
+    if (!node || !start) return;
+    node->span.start_line = start->span.start_line;
+    node->span.start_col  = start->span.start_col;
+}
+
+/* Stretches an existing node's span backwards (useful for modifiers like 'pub') */
+static inline void span_expand_left(AstNode *node, Token *start) {
+    set_span_start(node, start);
+}

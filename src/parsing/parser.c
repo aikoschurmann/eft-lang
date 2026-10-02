@@ -77,30 +77,6 @@ Token *expect(Parser *p, TokenKind expected, const char *error_msg) {
     return parser_advance(p);
 }
 
-// ---------------------------------------------------------
-// AST Node & Span Utilities
-// ---------------------------------------------------------
-
-/* Sets both ends of a node's span explicitly */
-static inline void set_span(AstNode *node, Token *start, Token *end) {
-    if (!node || !start || !end) return;
-    node->span.start_line = start->span.start_line;
-    node->span.start_col  = start->span.start_col;
-    node->span.end_line   = end->span.end_line;
-    node->span.end_col    = end->span.end_col;
-}
-
-/* Sets only the start of a node's span */
-static inline void set_span_start(AstNode *node, Token *start) {
-    if (!node || !start) return;
-    node->span.start_line = start->span.start_line;
-    node->span.start_col  = start->span.start_col;
-}
-
-/* Stretches an existing node's span backwards (useful for modifiers like 'pub') */
-static inline void span_expand_left(AstNode *node, Token *start) {
-    set_span_start(node, start);
-}
 
 AstNode *new_node(Parser *p, AstNodeType kind) {
     AstNode *node = ast_create_node(kind, p->arena);
@@ -111,7 +87,7 @@ AstNode *new_node(Parser *p, AstNodeType kind) {
 }
 
 /* Allocates a node and sets its span from start_tok to the last consumed token */
-static AstNode *new_node_spanned(Parser *p, AstNodeType kind, Token *start_tok) {
+AstNode *new_node_spanned(Parser *p, AstNodeType kind, Token *start_tok) {
     AstNode *node = new_node(p, kind);
     set_span(node, start_tok, previous_token(p));
     return node;
