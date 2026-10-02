@@ -42,7 +42,9 @@ static TokenKind punct_kind(Lexer *l, char c) {
             return lexer_match(l, '=') ? TK_PERCENT_EQ : TK_PERCENT;
 
         case '=':
-            return lexer_match(l, '=') ? TK_EQ_EQ : TK_EQ;
+            if (lexer_match(l, '=')) return TK_EQ_EQ;
+            if (lexer_match(l, '>')) return TK_FAT_ARROW;
+            return TK_EQ;
 
         case '!':
             return lexer_match(l, '=') ? TK_BANG_EQ : TK_BANG;
