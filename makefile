@@ -6,9 +6,25 @@ SRC_DIR := src
 OBJ_DIR := obj
 TEST_DIR := test
 
+
 # OS specifics
 EXE := $(if $(filter Windows_NT,$(OS)),.exe,)
 LDFLAGS := -lm $(if $(filter-out Windows_NT,$(OS)),-rdynamic,)
+
+USE_WRAP := 0
+ifeq ($(OS),Windows_NT)
+    USE_WRAP := 1
+else
+    ifneq ($(shell uname -s),Darwin)
+        USE_WRAP := 1
+    endif
+endif
+
+TEST_LDFLAGS := $(LDFLAGS)
+ifeq ($(USE_WRAP),1)
+    TEST_LDFLAGS += -Wl,--wrap=malloc -Wl,--wrap=calloc -Wl,--wrap=realloc
+endif
+
 
 # LLVM config (auto-detect)
 LLVM_CONFIG ?= $(shell command -v llvm-config 2>/dev/null || find /opt/homebrew/opt/llvm/bin -name llvm-config 2>/dev/null | head -n 1)
@@ -85,12 +101,12 @@ $(OBJ_DIR)/asan/test/%.o: $(TEST_DIR)/%.c
 $(OUT_DIR)/test_runner$(EXE): $(filter-out $(OBJ_DIR)/dev/main.o,$(OBJS_DEV)) $(TEST_OBJS)
 	@mkdir -p $(dir $@)
 	@echo "  LD      $@"
-	@$(CC) $^ -o $@ $(LDFLAGS)
+	@$(CC) $^ -o $@ $(TEST_LDFLAGS)
 
 $(OUT_DIR)/test_runner-asan$(EXE): $(filter-out $(OBJ_DIR)/asan/main.o,$(OBJS_ASAN)) $(TEST_OBJS_ASAN)
 	@mkdir -p $(dir $@)
 	@echo "  LD      $@"
-	@$(CC) $^ -o $@ $(LDFLAGS) -fsanitize=address,undefined
+	@$(CC) $^ -o $@ $(TEST_LDFLAGS) -fsanitize=address,undefined
 
 test: $(OUT_DIR)/test_runner$(EXE)
 	@./$(OUT_DIR)/test_runner$(EXE)

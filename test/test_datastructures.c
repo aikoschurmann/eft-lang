@@ -37,7 +37,7 @@ static unsigned g_fail_every = 0;
 static unsigned g_calls = 0;
 
 
-#if defined(__APPLE__) || defined(__linux__)
+#if defined(__APPLE__)
 #include <dlfcn.h>
 void *malloc(size_t size) {
     if (g_fail_every && (++g_calls % g_fail_every) == 0) return NULL;
@@ -56,9 +56,19 @@ void *realloc(void *ptr, size_t size) {
     return real_realloc(ptr, size);
 }
 #else
-// On Windows/MSVC/MinGW, overriding malloc dynamically is extremely non-trivial without 
-// specialized detouring libraries.
-#define malloc_is_stubbed 1
+void *__real_malloc(size_t);
+void *__wrap_malloc(size_t size) {
+    if (g_fail_every && (++g_calls % g_fail_every) == 0) return NULL;
+    return __real_malloc(size);
+}
+void *__real_calloc(size_t, size_t);
+void *__wrap_calloc(size_t n, size_t size) {
+    return __real_calloc(n, size);
+}
+void *__real_realloc(void*, size_t);
+void *__wrap_realloc(void *ptr, size_t size) {
+    return __real_realloc(ptr, size);
+}
 #endif
 
 
@@ -341,7 +351,9 @@ static void test_interner_oom(void) {
         CHECK(hashmap_size(m) == count);
     }
     g_fail_every = 0;
-    CHECK(failures > 0);                                /* the injection actually fired */
+    #ifndef malloc_is_stubbed
+    CHECK(failures > 0);
+    #endif                                /* the injection actually fired */
 
     for (unsigned id = 0; id < N; id++) {
         size_t n = (size_t)snprintf(buf, sizeof buf, "oom_%u", id);
