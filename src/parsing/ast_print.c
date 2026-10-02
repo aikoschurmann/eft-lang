@@ -131,7 +131,6 @@ const char *ast_op_name(OpKind op) {
         case OP_GTE: return ">=";   case OP_AND: return "and";
         case OP_OR:  return "or";   case OP_NOT: return "!";
         case OP_NEG: return "-";    case OP_REF: return "&";
-        case OP_REF_MUT:    return "&mut";
         case OP_DEREF:      return ".*";
         case OP_ASSIGN:     return "=";
         case OP_ADD_ASSIGN: return "+=";  case OP_SUB_ASSIGN: return "-=";

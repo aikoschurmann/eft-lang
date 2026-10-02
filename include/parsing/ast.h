@@ -20,7 +20,7 @@ typedef enum {
     OP_EQ, OP_NEQ, OP_LT, OP_LTE, OP_GT, OP_GTE,
     OP_AND, OP_OR, OP_BIT_AND, OP_BIT_OR, OP_BIT_XOR, OP_SHL, OP_SHR,
     OP_COALESCE,
-    OP_NEG, OP_NOT, OP_REF, OP_REF_MUT, OP_DEREF, OP_COMPTIME,
+    OP_NEG, OP_NOT, OP_REF, OP_DEREF, OP_COMPTIME,
     OP_PROPAGATE, OP_FORCE_UNWRAP,
     OP_ASSIGN, OP_ADD_ASSIGN, OP_SUB_ASSIGN, OP_MUL_ASSIGN, OP_DIV_ASSIGN, OP_MOD_ASSIGN,
     OP_BIT_AND_ASSIGN, OP_BIT_OR_ASSIGN, OP_BIT_XOR_ASSIGN, OP_SHL_ASSIGN, OP_SHR_ASSIGN
@@ -209,6 +209,11 @@ typedef enum {
     X(AST_CALL_EXPR, call_expr, \
         AST_FIELD_NODE(callee) \
         AST_FIELD_DYNARRAY(args) \
+    ) \
+    /* <Arg> ::= [ <Ident> COLON ] <Expr> */ \
+    X(AST_ARG, arg, \
+        AST_FIELD_INTERN(name) \
+        AST_FIELD_NODE(expr) \
     ) \
     /* <Postfix> ::= <Primary> { L_SQB <Expr> R_SQB } */ \
     X(AST_INDEX_EXPR, index_expr, \
