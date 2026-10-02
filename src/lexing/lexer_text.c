@@ -151,8 +151,9 @@ Token lexer_token_rune(Lexer *l, const char *start, size_t line, size_t col) {
     return make_token(l, kind, start, line, col, rec);
 }
 
-/* Byte literals: b"..." and b'...'. The 'b' is already consumed. */
-Token lexer_token_byte_literal(Lexer *l, const char *start, size_t line, size_t col) {
+/* Prefixed literals: b"...", b'...', and c"...". The prefix is already consumed. */
+Token lexer_token_prefixed_literal(Lexer *l, const char *start, size_t line, size_t col) {
+    char prefix = start[0]; // 'b' or 'c'
     char quote = *l->cur;
     lexer_advance(l);
 
@@ -161,7 +162,8 @@ Token lexer_token_byte_literal(Lexer *l, const char *start, size_t line, size_t 
     if (quote == '"') {
         lexer_lex_string(&p, l->end);
         sync_to(l, p);
-        return make_token(l, TK_BYTE_STR_LIT, start, line, col, NULL);
+        TokenKind k = (prefix == 'c') ? TK_C_STR_LIT : TK_BYTE_STR_LIT;
+        return make_token(l, k, start, line, col, NULL);
     }
 
     uint32_t cp = 0;

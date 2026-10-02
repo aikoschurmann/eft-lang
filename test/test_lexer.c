@@ -68,24 +68,25 @@ static void test_lexer_numbers(void) {
 }
 
 static void test_lexer_strings_and_runes(void) {
-    const char *src = "\"hello\" b\"world\" 'a' b'c' \"line\\n1\" '\\n'";
+    const char *src = "\"hello\" b\"world\" c\"ffi\" 'a' b'c' \"line\\n1\" '\\n'";
     Arena *arena = arena_create(1024);
     
     Lexer *l = lexer_create(src, strlen(src), arena);
     
     assert_token(l, TK_STR_LIT, "\"hello\"", 1, 1);
     assert_token(l, TK_BYTE_STR_LIT, "b\"world\"", 1, 9);
-    assert_token(l, TK_RUNE_LIT, "'a'", 1, 18);
-    assert_token(l, TK_BYTE_LIT, "b'c'", 1, 22);
-    assert_token(l, TK_STR_LIT, "\"line\\n1\"", 1, 27);
-    assert_token(l, TK_RUNE_LIT, "'\\n'", 1, 37);
+    assert_token(l, TK_C_STR_LIT, "c\"ffi\"", 1, 18);
+    assert_token(l, TK_RUNE_LIT, "'a'", 1, 0);
+    assert_token(l, TK_BYTE_LIT, "b'c'", 1, 0);
+    assert_token(l, TK_STR_LIT, "\"line\\n1\"", 1, 0);
+    assert_token(l, TK_RUNE_LIT, "'\\n'", 1, 0);
     assert_token(l, TK_EOF, NULL, 0, 0);
 
     arena_destroy(arena);
 }
 
 static void test_lexer_punctuators(void) {
-    const char *src = "+ - * / % += -= *= /= %= == != < <= > >= && || & | ^ ~ << >> ! ? .. . -> =>";
+    const char *src = "+ - * / % += -= *= /= %= == != < <= > >= && || & | ^ ~ << >> ! ? .. . -> => @ ..= ?? &= |= ^= <<= >>=";
     Arena *arena = arena_create(1024);
     
     Lexer *l = lexer_create(src, strlen(src), arena);
@@ -120,6 +121,14 @@ static void test_lexer_punctuators(void) {
     assert_token(l, TK_DOT, ".", 1, 69);
     assert_token(l, TK_ARROW, "->", 1, 71);
     assert_token(l, TK_FAT_ARROW, "=>", 1, 74);
+    assert_token(l, TK_AT, "@", 1, 77);
+    assert_token(l, TK_DOT_DOT_EQ, "..=", 1, 79);
+    assert_token(l, TK_COALESCE, "??", 1, 83);
+    assert_token(l, TK_AMPERSAND_EQ, "&=", 1, 86);
+    assert_token(l, TK_PIPE_EQ, "|=", 1, 89);
+    assert_token(l, TK_CARET_EQ, "^=", 1, 92);
+    assert_token(l, TK_SHL_EQ, "<<=", 1, 95);
+    assert_token(l, TK_SHR_EQ, ">>=", 1, 99);
     
     assert_token(l, TK_EOF, NULL, 0, 0);
 

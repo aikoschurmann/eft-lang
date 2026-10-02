@@ -143,7 +143,7 @@ Token lexer_token_number(Lexer *l, const char *start, size_t line, size_t col);
 /* lexer_text.c: string, char and byte literals */
 Token lexer_token_string(Lexer *l, const char *start, size_t line, size_t col);
 Token lexer_token_rune(Lexer *l, const char *start, size_t line, size_t col);
-Token lexer_token_byte_literal(Lexer *l, const char *start, size_t line, size_t col);
+Token lexer_token_prefixed_literal(Lexer *l, const char *start, size_t line, size_t col);
 
 /* lexer_punct.c: operators and delimiters */
 Token lexer_token_punct(Lexer *l, char c, const char *start, size_t line, size_t col);

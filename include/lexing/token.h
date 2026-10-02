@@ -23,19 +23,31 @@
     X(TK_CONTINUE,  "continue") \
     X(TK_RETURN,    "return") \
     X(TK_DEFER,     "defer") \
+    X(TK_ERRDEFER,  "errdefer") \
+    X(TK_LOOP,      "loop") \
     /* Modifiers */ \
     X(TK_COMPTIME,  "comptime") \
     X(TK_MUT,       "mut") \
     X(TK_CONST,     "const") \
     X(TK_PUB,       "pub") \
+    X(TK_EXTERN,    "extern") \
+    X(TK_PACKED,    "packed") \
+    X(TK_UNSAFE,    "unsafe") \
+    X(TK_SPAWN,     "spawn") \
     /* Bindings & Modules */ \
     X(TK_AS,        "as") \
     X(TK_IN,        "in") \
     X(TK_IMPORT,    "import") \
-    /* Literals */ \
+    X(TK_IMPORT_C,  "import_c") \
+    X(TK_WHERE,     "where") \
+    X(TK_TEST,      "test") \
+    /* Keywords & Literals */ \
     X(TK_TRUE,      "true") \
     X(TK_FALSE,     "false") \
     X(TK_NULL,      "null") \
+    X(TK_SELF,      "self") \
+    X(TK_SELF_TYPE, "Self") \
+    X(TK_ASSERT,    "assert") \
     /* Built-in Types */ \
     X(TK_I8,        "i8") \
     X(TK_I16,       "i16") \
@@ -83,6 +95,11 @@
     X(TK_STAR_EQ,   "*=") \
     X(TK_SLASH_EQ,  "/=") \
     X(TK_PERCENT_EQ,"%=") \
+    X(TK_AMPERSAND_EQ,"&=") \
+    X(TK_PIPE_EQ,   "|=") \
+    X(TK_CARET_EQ,  "^=") \
+    X(TK_SHL_EQ,    "<<=") \
+    X(TK_SHR_EQ,    ">>=") \
     /* Comparison */ \
     X(TK_EQ_EQ,     "==") \
     X(TK_BANG_EQ,   "!=") \
@@ -103,7 +120,10 @@
     /* Eft-Specific */ \
     X(TK_BANG,      "!") \
     X(TK_QUESTION,  "?") \
-    X(TK_DOT_DOT,   "..")
+    X(TK_COALESCE,  "??") \
+    X(TK_DOT_DOT,   "..") \
+    X(TK_DOT_DOT_EQ,"..=") \
+    X(TK_AT,        "@")
 
 #define EFT_DYNAMIC(X) \
     /* Literals & Identifiers */ \
@@ -112,6 +132,7 @@
     X(TK_FLOAT_LIT,     "float_lit") \
     X(TK_STR_LIT,       "str_lit") \
     X(TK_BYTE_STR_LIT,  "byte_str_lit") \
+    X(TK_C_STR_LIT,     "c_str_lit") \
     X(TK_RUNE_LIT,      "rune_lit") \
     X(TK_BYTE_LIT,      "byte_lit") \
     /* System */ \

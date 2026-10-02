@@ -26,17 +26,17 @@ static InternResult *lexer_lex_identifier(Lexer *lexer, const char *start_ptr, c
     return idres;
 }
 
-/* True if the already-consumed 'b' is directly followed by a quote */
-static bool starts_byte_literal(const Lexer *l, char c) {
-    return c == 'b'
-        && l->cur < l->end
-        && (*l->cur == '"' || *l->cur == '\'');
+/* True if the already-consumed prefix ('b' or 'c') is directly followed by a valid quote */
+static bool starts_prefixed_literal(const Lexer *l, char c) {
+    if (c == 'b' && l->cur < l->end && (*l->cur == '"' || *l->cur == '\'')) return true;
+    if (c == 'c' && l->cur < l->end && *l->cur == '"') return true;
+    return false;
 }
 
-/* Word token: byte literal prefix, keyword, or identifier. `c` is already consumed. */
+/* Word token: literal prefix, keyword, or identifier. `c` is already consumed. */
 Token lexer_token_word(Lexer *l, char c, const char *start, size_t line, size_t col) {
-    if (starts_byte_literal(l, c)) {
-        return lexer_token_byte_literal(l, start, line, col);
+    if (starts_prefixed_literal(l, c)) {
+        return lexer_token_prefixed_literal(l, start, line, col);
     }
 
     const char *p = l->cur;
