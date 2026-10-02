@@ -73,24 +73,24 @@ $(eval $(call COMPILE_RULE,asan,-O1 -fsanitize=address,undefined -fno-omit-frame
 
 # --- Test Runner ---
 $(OBJ_DIR)/test/%.o: $(TEST_DIR)/%.c
-	@mkdir -p $$(dir $$@)
-	@echo "  CC      $$<"
-	@$$(CC) $$(CFLAGS) -O0 -DDEV_BUILD -I$(TEST_DIR)/harness -I$(TEST_DIR)/helpers -c $$< -o $$@
+	@mkdir -p $(dir $@)
+	@echo "  CC      $<"
+	@$(CC) $(CFLAGS) -O0 -DDEV_BUILD -I$(TEST_DIR)/harness -I$(TEST_DIR)/helpers -c $< -o $@
 
 $(OBJ_DIR)/asan/test/%.o: $(TEST_DIR)/%.c
-	@mkdir -p $$(dir $$@)
-	@echo "  CC      $$<"
-	@$$(CC) $$(CFLAGS) -O1 -fsanitize=address,undefined -fno-omit-frame-pointer -I$(TEST_DIR)/harness -I$(TEST_DIR)/helpers -c $$< -o $$@
+	@mkdir -p $(dir $@)
+	@echo "  CC      $<"
+	@$(CC) $(CFLAGS) -O1 -fsanitize=address,undefined -fno-omit-frame-pointer -I$(TEST_DIR)/harness -I$(TEST_DIR)/helpers -c $< -o $@
 
 $(OUT_DIR)/test_runner$(EXE): $(filter-out $(OBJ_DIR)/dev/main.o,$(OBJS_DEV)) $(TEST_OBJS)
-	@mkdir -p $$(dir $$@)
-	@echo "  LD      $$@"
-	@$$(CC) $$^ -o $$@ $$(LDFLAGS)
+	@mkdir -p $(dir $@)
+	@echo "  LD      $@"
+	@$(CC) $^ -o $@ $(LDFLAGS)
 
 $(OUT_DIR)/test_runner-asan$(EXE): $(filter-out $(OBJ_DIR)/asan/main.o,$(OBJS_ASAN)) $(TEST_OBJS_ASAN)
-	@mkdir -p $$(dir $$@)
-	@echo "  LD      $$@"
-	@$$(CC) $$^ -o $$@ $$(LDFLAGS) -fsanitize=address,undefined
+	@mkdir -p $(dir $@)
+	@echo "  LD      $@"
+	@$(CC) $^ -o $@ $(LDFLAGS) -fsanitize=address,undefined
 
 test: $(OUT_DIR)/test_runner$(EXE)
 	@./$(OUT_DIR)/test_runner$(EXE)

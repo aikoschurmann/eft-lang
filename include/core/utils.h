@@ -18,8 +18,8 @@ typedef struct {
     uint32_t len;     // length of the slice
 } Slice;
 
-static inline size_t slice_hash(void *p) {
-    Slice *s = (Slice*)p;
+static inline size_t slice_hash(const void *p) {
+    const Slice *s = (const Slice*)p;
     size_t h = (size_t)1469598103934665603ULL; /* FNV-1a 64-bit */
     for (size_t i = 0; i < s->len; ++i) {
         h ^= (unsigned char)s->ptr[i];
@@ -28,10 +28,11 @@ static inline size_t slice_hash(void *p) {
     return h;
 }
 
-static inline int slice_cmp(void *a, void *b) {
-    Slice *sa = (Slice*)a;
-    Slice *sb = (Slice*)b;
+static inline int slice_cmp(const void *a, const void *b) {
+    const Slice *sa = (const Slice*)a;
+    const Slice *sb = (const Slice*)b;
     if (sa->len != sb->len) return (sa->len < sb->len) ? -1 : 1;
+    if (sa->len == 0) return 0;
     return memcmp(sa->ptr, sb->ptr, sa->len);
 }
 
@@ -40,19 +41,19 @@ static inline Span span_join(const Span *a, const Span *b) {
     return (Span){a->start_line, a->start_col, b->end_line, b->end_col};
 }
 
-static inline size_t ptr_hash(void *key) {
+static inline size_t ptr_hash(const void *key) {
     // Shift right to remove alignment zeros (usually 3 or 4 bits)
     // and mix slightly to avoid collisions in low buckets
     size_t k = (size_t)key;
     return (k >> 4) ^ (k >> 9);
 }
 
-static inline int ptr_cmp(void *a, void *b) {
+static inline int ptr_cmp(const void *a, const void *b) {
     // Compare pointer identity: Three-way comparison (Q-3)
     return (a > b) - (a < b);
 }
 
-static inline size_t str_hash(void *key) {
+static inline size_t str_hash(const void *key) {
     const char *s = (const char *)key;
     size_t h = (size_t)1469598103934665603ULL;
     while (*s) {
@@ -62,7 +63,7 @@ static inline size_t str_hash(void *key) {
     return h;
 }
 
-static inline int str_cmp(void *a, void *b) {
+static inline int str_cmp(const void *a, const void *b) {
     return strcmp((const char *)a, (const char *)b);
 }
 

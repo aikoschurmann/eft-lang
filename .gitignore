@@ -1,4 +1,22 @@
-/web
-/out
-/obj
-/.vscode
+# Build artifacts
+/out/
+/obj/
+/scratch/
+*.o
+*.a
+*.so
+*.dylib
+*.exe
+*.dSYM/
+
+# OS and IDE files
+.DS_Store
+/.vscode/
+*.swp
+*~
+.idea/
+
+# Project specifics
+/web/
+todo.md
+test.eft

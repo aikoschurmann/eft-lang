@@ -65,11 +65,7 @@ void lexer_populate_default_keywords(DenseArenaInterner *keywords) {
    ══════════════════════════════════════════════════════════════════════════ */
 
 static DenseArenaInterner *create_interner(Arena *arena, size_t initial_capacity) {
-    return intern_table_create(hashmap_create(arena, initial_capacity),
-                               arena,
-                               string_copy_func,
-                               slice_hash,
-                               slice_cmp);
+    return intern_table_create(hashmap_create(arena, initial_capacity, slice_hash, slice_cmp), arena);
 }
 
 Lexer *lexer_create_ex(const char *source, size_t source_len, Arena *arena,

@@ -1,5 +1,6 @@
 #pragma once
 #include <stddef.h>
+#include <stdalign.h>
 
 /*
  * A memory arena is a pre-allocated block of memory used for fast, efficient
@@ -23,7 +24,7 @@ typedef struct ArenaBlock {
     struct ArenaBlock *next; // Pointer to the next block
     size_t capacity;         // Total capacity of this block
     size_t used;             // Amount of memory used in this block
-    char data[];             // Flexible array member for actual data
+    alignas(max_align_t) char data[];             // Flexible array member for actual data
 } ArenaBlock;
 
 typedef struct Arena {
@@ -41,4 +42,3 @@ void *arena_calloc(Arena *arena, size_t size);
 size_t arena_bytes_used(const Arena *arena);
 size_t arena_bytes_capacity(const Arena *arena);
 size_t arena_block_count(const Arena *arena);
-size_t arena_total_allocated(const Arena *arena);

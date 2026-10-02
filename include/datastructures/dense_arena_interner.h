@@ -24,7 +24,6 @@ typedef struct {
     Arena *arena;
     HashMap *hashmap;
     DynArray *dense_array;
-    int dense_index_count;
     
     /** Copy function that makes the canonical (arena-allocated) copy. */
     void* (*copy_func)(Arena *arena, const void *data, size_t len);
@@ -40,7 +39,7 @@ typedef struct {
  */
 typedef struct {
     void* meta;      /**< user-provided metadata */
-    int dense_index; /**< dense index assigned when interned (0-based) */
+    size_t dense_index; /**< dense index assigned when interned (0-based) */
 } Entry;
 
 /**
@@ -65,20 +64,14 @@ typedef struct {
  * @param len   length of the data (bytes)
  * @return pointer to arena-allocated copy (NULL on allocation failure)
  */
-typedef void* (*CopyFunc)(Arena *arena, const void *data, size_t len);
-
 /**
  * @brief Copy bytes and null-terminate (useful for C-strings).
  *
  * Allocates len+1 bytes in the arena, copies len bytes and appends '\0'.
  */
-void* string_copy_func(Arena *arena, const void *data, size_t len);  // null-terminate
-
 /**
  * @brief Copy bytes exactly (no null terminator).
  */
-void* binary_copy_func(Arena *arena, const void *data, size_t len);  // exact copy
-
 
 /* --- Construction / destruction --- */
 
@@ -92,8 +85,11 @@ void* binary_copy_func(Arena *arena, const void *data, size_t len);  // exact co
  * @param cmp_func  comparison function for keys
  * @return pointer to newly created DenseArenaInterner or NULL on error
  */
-DenseArenaInterner* intern_table_create(HashMap *hashmap, Arena *arena, CopyFunc copy_func, 
-                                       size_t (*hash_func)(void*), int (*cmp_func)(void*, void*));
+/**
+ * @brief Create an interner that stores all allocations inside `arena`.
+ * Takes ownership of the provided hashmap (it will be destroyed when the interner is destroyed).
+ */
+DenseArenaInterner* intern_table_create(HashMap *hashmap, Arena *arena);
 
 /**
  * @brief Destroy the interner and the underlying hashmap.
@@ -106,7 +102,7 @@ DenseArenaInterner* intern_table_create(HashMap *hashmap, Arena *arena, CopyFunc
  * @param free_key  optional function to free keys (or NULL)
  * @param free_value optional function to free values (or NULL)
  */
-void intern_table_destroy(DenseArenaInterner *interner, void (*free_key)(void*), void (*free_value)(void*));
+void intern_table_destroy(DenseArenaInterner *interner);
 
 
 /* --- Interning / lookup --- */
@@ -135,7 +131,7 @@ void *intern_ptr(DenseArenaInterner *interner, Slice *slice, void* meta);
  *
  * @return dense index (>=0) or -1 on error.
  */
-int  intern_idx(DenseArenaInterner *interner, Slice *slice, void* meta);
+size_t intern_idx(DenseArenaInterner *interner, Slice *slice, void* meta);
 
 /**
  * @brief Lookup without inserting. Returns existing InternResult* or NULL.
@@ -150,7 +146,7 @@ InternResult* intern_peek(DenseArenaInterner *interner, Slice *slice);
  *
  * The returned pointer is arena-owned and stable for the lifetime of the arena.
  */
-const char *interner_get_cstr(DenseArenaInterner *interner, int idx);
+const char *interner_get_cstr(DenseArenaInterner *interner, size_t idx);
 
 /**
  * @brief Return the InternResult pointer for a given dense index.
@@ -159,7 +155,7 @@ const char *interner_get_cstr(DenseArenaInterner *interner, int idx);
  * @param idx The dense index.
  * @return InternResult* The intern result at that index, or NULL if invalid.
  */
-InternResult *interner_get_result(DenseArenaInterner *interner, int idx);
+InternResult *interner_get_result(DenseArenaInterner *interner, size_t idx);
 
 
 /**
@@ -171,7 +167,7 @@ InternResult *interner_get_result(DenseArenaInterner *interner, int idx);
  *   meta  : user metadata
  *   user  : user-supplied context pointer
  */
-typedef void (*InternerIterFn)(int idx, const Slice *key, void *meta, void *user);
+typedef void (*InternerIterFn)(size_t idx, const Slice *key, void *meta, void *user);
 
 void interner_foreach(const DenseArenaInterner *interner,
                       InternerIterFn cb,
