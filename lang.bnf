@@ -1,0 +1,130 @@
+#  SYNTAX::
+#    [] - optional
+#    {} - zero or more repetitions
+#    () - grouping
+#    |  - alternatives
+#    <name> - non-terminal symbol
+#    NAME - terminal symbol (token)
+#
+#  KEYWORDS:
+#    AS, ASSERT, BREAK, COMPTIME, CONCEPT, CONST, CONTINUE, DEFER, ELSE, ENUM, ERRDEFER, EXTERN, FALSE, FN, FOR, IF, IMPL, IMPORT, IMPORT_C, IN, LOOP, MATCH, MUT, NULL, PACKED, PUB, RETURN, SELF, SPAWN, STRUCT, TEST, TRUE, TYPE, UNCHECKED, UNSAFE, WHERE, WHILE
+#  
+#  OPERATORS & SYMBOLS:
+#    AMP (&), AMP_EQ (&=), AND_AND (&&), ARROW (->), ASSIGN (=), AT (@), BANG (!), BANG_EQ (!=), B_QUOTE (b'), CARET (^), CARET_EQ (^=), COLON (:), COLON_EQ (:=), COMMA (,), DOT (.), DOT_DOT (..), DOT_DOT_EQ (..=), DOT_L_SQB (.[), EQ_EQ (==), FAT_ARROW (=>), GT (>), GT_EQ (>=), LPAREN ((), LSHIFT (<<), LSHIFT_EQ (<<=), LT (<), LT_EQ (<=), L_BRACE ({), L_SQB ([), MINUS (-), MINUS_EQ (-=), OR_OR (||), PERCENT (%), PERCENT_EQ (%=), PIPE (|), PIPE_EQ (|=), PLUS (+), PLUS_EQ (+=), QUESTION (?), QUESTION_QUESTION (??), RPAREN ()), RSHIFT (>>), RSHIFT_EQ (>>=), R_BRACE (}), R_SQB (]), SEMICOLON (;), SLASH (/), SLASH_EQ (/=), STAR (*), STAR_EQ (*=), UNDERSCORE (_)
+
+
+<Program>       ::= { <Item> }
+<Item>          ::= [ PUB ] ( <Import> | <ExternBlock> | <ImportC> | <Fn> | <Struct> | <Enum> | <Concept>
+                   | <Impl> | <ConstDecl> | <TypeAlias> | <Test> )
+<Import>        ::= IMPORT <Path> [ AS <Ident> | DOT ( STAR | L_BRACE <ImportItem> { COMMA <ImportItem> } [ COMMA ] R_BRACE ) ] SEMICOLON
+<ImportItem>    ::= <Ident> [ AS <Ident> ]
+<Path>          ::= <Ident> { DOT <Ident> }
+<ImportC>       ::= IMPORT_C <String> SEMICOLON
+<ExternBlock>   ::= EXTERN <String> L_BRACE { <FnSig> SEMICOLON } R_BRACE
+<TypeAlias>     ::= TYPE <Ident> [ <Generics> ] ASSIGN <Type> SEMICOLON
+<ConstDecl>     ::= CONST <Ident> [ COLON <Type> ] COLON_EQ <Expr> SEMICOLON
+<Test>          ::= TEST <String> <Block>
+
+<Generics>      ::= LT <GParam> { COMMA <GParam> } GT
+<GParam>        ::= <Ident> [ COLON <Bounds> ] | CONST <Ident> COLON <Type>
+<Bounds>        ::= <BoundRef> { PLUS <BoundRef> }
+<BoundRef>      ::= <Path> [ <GenericArgs> ]
+                   | FN LPAREN [ <Type> { COMMA <Type> } ] RPAREN ARROW <Type>
+<TypeArg>       ::= <Ident> ASSIGN <Type> | <Type>
+<GenericArgs>   ::= LT <TypeArg> { COMMA <TypeArg> } GT ; # in expressions only if the token after ">" is "(", "." or "{" 
+<Where>         ::= WHERE <Constraint> { COMMA <Constraint> } [ COMMA ]
+<Constraint>    ::= <Type> COLON <Bounds> | <Type> EQ_EQ <Type> | COMPTIME <Expr>
+
+<Fn>            ::= [ COMPTIME ] <FnSig> ( <Block> | FAT_ARROW <Expr> SEMICOLON )
+<FnSig>         ::= FN <Ident> [ <Generics> ] LPAREN [ <Params> ] RPAREN [ ARROW <Type> ] [ <Where> ]
+<Params>        ::= <Param> { COMMA <Param> } [ COMMA ]
+<Param>         ::= <SelfParam> | <Ident> COLON <Type> [ ASSIGN <Expr> ]
+<SelfParam>     ::= [ MUT ] SELF
+
+<Struct>        ::= [ PACKED ] STRUCT <Ident> [ <Generics> ] [ <Where> ] L_BRACE [ <Fields> ] R_BRACE
+<Fields>        ::= <Field> { COMMA <Field> } [ COMMA ]
+<Field>         ::= <Ident> COLON <Type> [ ASSIGN <Expr> ]
+<Enum>          ::= ENUM <Ident> [ <Generics> ] L_BRACE <Variant> { COMMA <Variant> } [ COMMA ] R_BRACE
+<Variant>       ::= <Ident> [ L_BRACE [ <Fields> ] R_BRACE | LPAREN <Type> { COMMA <Type> } RPAREN ]
+<Concept>       ::= CONCEPT <Ident> [ <Generics> ] [ COLON <Bounds> ] L_BRACE { <ConceptItem> } R_BRACE
+<ConceptItem>   ::= TYPE <Ident> [ COLON <Bounds> ] SEMICOLON | <FnSig> ( SEMICOLON | <Block> | FAT_ARROW <Expr> SEMICOLON )
+<Impl>          ::= IMPL <Type> [ COLON <Bounds> ] [ <Where> ] L_BRACE { <ImplItem> } R_BRACE
+<ImplItem>      ::= <Fn> | TYPE <Ident> ASSIGN <Type> SEMICOLON
+
+<Type>          ::= <TypeAtom> { <TypeSuffix> }
+<TypeAtom>      ::= STAR [ MUT ] ( <TypeAtom> | LPAREN <Bounds> RPAREN ) [ IN <Ident> ]
+                   | LPAREN [ <Type> { COMMA <Type> } ] RPAREN
+                   | FN LPAREN [ <Type> { COMMA <Type> } ] RPAREN ARROW <Type>
+                   | FN LPAREN [ <Type> { COMMA <Type> } ] RPAREN ARROW <Type>
+                   | <Path> [ <GenericArgs> ]
+<TypeSuffix>    ::= L_SQB ( DOT_DOT | <Expr> | "" ) R_SQB | QUESTION | BANG <Type>
+
+<Block>         ::= L_BRACE { <Stmt> } [ <Expr> ] R_BRACE
+<Stmt>          ::= <Let> | <ConstDecl> | <ExprStmt> | <Defer> | <Return> | <Break> | <Continue> | <Assert> | <Unsafe> | SEMICOLON
+<Let>           ::= [ MUT ] ( <Ident> ( COLON_EQ | COLON <Type> ASSIGN ) | <Pattern> COLON_EQ ) <Expr> SEMICOLON
+<ExprStmt>      ::= <Expr> SEMICOLON | <BlockLike> | COMPTIME <BlockLike>
+<Defer>         ::= ( DEFER | ERRDEFER ) ( <Expr> SEMICOLON | <Block> )
+<Return>        ::= RETURN [ <Expr> ] SEMICOLON
+<Break>         ::= BREAK [ <Label> ] [ <Expr> ] SEMICOLON
+<Continue>      ::= CONTINUE [ <Label> ] SEMICOLON
+<Label>         ::= AT <Ident>
+<LabelDef>      ::= <Label> COLON
+<Assert>        ::= ASSERT <Expr> SEMICOLON
+<Unsafe>        ::= UNSAFE <Block>
+
+<Expr>          ::= <Assign>
+<Assign>        ::= <Range> [ <AssignOp> <Assign> ]
+<AssignOp>      ::= ASSIGN | PLUS_EQ | MINUS_EQ | STAR_EQ | SLASH_EQ | PERCENT_EQ | AMP_EQ | PIPE_EQ | CARET_EQ | LSHIFT_EQ | RSHIFT_EQ
+<Range>         ::= <Coalesce> [ ( DOT_DOT | DOT_DOT_EQ ) <Coalesce> ]
+<Coalesce>      ::= <Or> { QUESTION_QUESTION <Or> }
+<Or>            ::= <And> { OR_OR <And> }
+<And>           ::= <Cmp> { AND_AND <Cmp> }
+<Cmp>           ::= <BitOr> { ( EQ_EQ | BANG_EQ | LT | GT | LT_EQ | GT_EQ ) <BitOr> }
+<BitOr>         ::= <BitXor> { PIPE <BitXor> }
+<BitXor>        ::= <BitAnd> { CARET <BitAnd> }
+<BitAnd>        ::= <Shift> { AMP <Shift> } ; # infix only: after a complete operand 
+<Shift>         ::= <Add> { ( LSHIFT | RSHIFT ) <Add> }
+<Add>           ::= <Mul> { ( PLUS | MINUS ) <Mul> }
+<Mul>           ::= <Cast> { ( STAR | SLASH | PERCENT ) <Cast> }
+<Cast>          ::= <Unary> { AS <Type> }
+<Unary>         ::= ( MINUS | BANG | AMP [ MUT ] | STAR | COMPTIME ) <Unary> | <Postfix>
+<Postfix>       ::= <Primary> { LPAREN [ <Args> ] RPAREN | L_SQB <Expr> R_SQB | DOT ( <Ident> | <Int> ) [ <GenericArgs> ] | DOT_L_SQB <Expr> R_SQB
+                   | QUESTION | BANG | DOT UNCHECKED L_SQB <Expr> R_SQB }
+<Args>          ::= <Arg> { COMMA <Arg> } [ COMMA ]
+<Arg>           ::= [ <Ident> COLON ] <Expr>
+
+<Primary>       ::= <Literal> | <Ident> [ <GenericArgs> ] | <StructLit> | LPAREN [ <Expr> { COMMA <Expr> } ] RPAREN
+                   | L_SQB [ <Expr> { COMMA <Expr> } ] R_SQB | <Lambda> | <BlockLike> | <Block>
+<StructLit>     ::= <Path> [ <GenericArgs> ] L_BRACE [ <Ident> COLON <Expr> { COMMA <Ident> COLON <Expr> } [ COMMA ] ] R_BRACE
+            # tried before a bare Ident. Not allowed unparenthesized in Cond, the iterable of "for", or the scrutinee of "match", so "for x in xs { }" is a loop and not an empty literal 
+<Lambda>        ::= ( PIPE [ <LParam> { COMMA <LParam> } ] PIPE | OR_OR ) <Expr>
+<LParam>        ::= <Ident> [ COLON <Type> ]
+<BlockLike>     ::= <If> | <While> | <For> | <Loop> | <Match> | SPAWN LPAREN <Expr> RPAREN
+<If>            ::= IF <Cond> <Block> [ ELSE ( <If> | <Block> ) ]
+<Cond>          ::= <Expr> | <Pattern> COLON_EQ <Expr>
+<While>         ::= [ <LabelDef> ] WHILE <Cond> <Block>
+<For>           ::= [ <LabelDef> ] FOR <Pattern> IN <Expr> <Block>
+<Loop>          ::= [ <LabelDef> ] LOOP <Block>
+<Match>         ::= MATCH <Expr> L_BRACE <Arm> { COMMA <Arm> } [ COMMA ] R_BRACE
+<Arm>           ::= <Pattern> { PIPE <Pattern> } [ IF <Expr> ] FAT_ARROW <Expr>
+
+<Pattern>       ::= UNDERSCORE | <Literal> | <Path> | <Path> L_BRACE [ <FieldPat> { COMMA <FieldPat> } ] [ DOT_DOT ] R_BRACE
+                   | <Path> LPAREN [ <Pattern> { COMMA <Pattern> } ] RPAREN
+                   | LPAREN <Pattern> { COMMA <Pattern> } RPAREN
+<FieldPat>      ::= <Ident> [ COLON <Pattern> ]
+<Literal>       ::= <Int> | <Float> | <String> | <Rune> | <Byte> | TRUE | FALSE | NULL
+<Rune>          ::= "'" ( <AnyChar> | <Escape> ) "'"
+<Byte>          ::= B_QUOTE ( <Ascii> | <Escape> ) "'" ; # Escape includes \u{hex} 
+
+
+<Ident>         ::= ( <Letter> | UNDERSCORE ) { <Letter> | <Digit> | UNDERSCORE } ; # not a keyword 
+<Int>           ::= <Digit> { <Digit> | UNDERSCORE }
+<Float>         ::= <Digit> { <Digit> | UNDERSCORE } DOT <Digit> { <Digit> | UNDERSCORE }
+<String>        ::= '"' { <AnyChar> | <Escape> } '"' ; # "{expr}" and "{expr:spec}" are split out by the formatter 
+<Escape>        ::= "\\" ( "n" | "t" | "r" | "0" | "\\" | '"' | "'" | "u{" <HexDigit> { <HexDigit> } R_BRACE )
+
+<Letter>        ::= "A" .. "Z" | "a" .. "z"
+<Digit>         ::= "0" .. "9"
+<HexDigit>      ::= <Digit> | "A" .. "F" | "a" .. "f"
+<AnyChar>       ::= ? any Unicode scalar except quote and backslash ?
+<Ascii>         ::= ? any 7 - bit character except quote and backslash ?
